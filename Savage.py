@@ -2,12 +2,14 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 
+# -----------------------------
+# Function 1: Buy File → PLM Upload
+# -----------------------------
 def transform_style_units(uploaded_file):
     """
-    Reads the Excel file, keeps only Design Style, XFD, and Global Units,
+    Reads the Buy Excel file, keeps only Design Style, XFD, and Global Units,
     extracts months from XFD, and pivots Global Units into monthly columns.
     """
-
     # --- Load Excel with headers from row 3 (index=2) ---
     df = pd.read_excel(uploaded_file, header=2)
 
@@ -54,29 +56,84 @@ def transform_style_units(uploaded_file):
     return pivot_df
 
 
-# --- Streamlit App ---
-st.title("📊 PLM Upload - Savage Tool")
-st.markdown("Upload your **buy file** and download the transformed output for PLM upload.")
+# -----------------------------
+# Function 2: PLM Download → MCU Format
+# -----------------------------
+def transform_plm_to_mcu(uploaded_file):
+    """
+    Reads PLM download file with multiple sheets,
+    drops "Sum*" columns, and combines into MCU format.
+    """
+    # --- Define expected sheet names ---
+    sheet_names = [
+        "Fabrics", "Strip Cut", "Laces", "Embriodery/Printing",
+        "Elastics", "Tapes", "Trim/Component", "Label/ Transfer",
+        "Foam Cup", "Packing Trim"
+    ]
 
-uploaded_file = st.file_uploader("Upload Excel File", type=["xlsx", "xls"])
+    # --- Standard columns to always include ---
+    base_cols = [
+        "Sheet Names", "Season", "Style", "BOM", "Cycle", "Article",
+        "Type of Const 1", "Supplier", "UOM", "Composition",
+        "Measurement", "Supplier Country", "Avg YY"
+    ]
 
-if uploaded_file:
-    st.success("✅ File uploaded successfully. Processing...")
-    
+    all_data = []
+
+    # --- Read the Excel file with all sheets ---
+    xls = pd.ExcelFile(uploaded_file)
+
+    for sheet in sheet_names:
+        if sheet in xls.sheet_names:
+            df = pd.read_excel(xls, sheet_name=sheet)
+
+            # Drop columns starting with "Sum"
+            df = df[[c for c in df.columns if not c.startswith("Sum")]]
+
+            # Add sheet name column
+            df.insert(0, "Sheet Names", sheet)
+
+            # Identify month/dynamic columns (everything not in base_cols except "Sheet Names")
+            dynamic_cols = [c for c in df.columns if c not in base_cols]
+
+            # Ensure we keep only base_cols + dynamic_cols
+            keep_cols = [c for c in base_cols if c in df.columns] + dynamic_cols
+            df = df[keep_cols]
+
+            all_data.append(df)
+
+    # --- Combine all sheets into one ---
+    if all_data:
+        combined_df = pd.concat(all_data, ignore_index=True)
+    else:
+        combined_df = pd.DataFrame(columns=base_cols)
+
+    return combined_df
+
+
+# -----------------------------
+# Streamlit App
+# -----------------------------
+st.title("📊 Savage Automation Tool")
+
+# --- Section 1: Buy File → PLM Upload ---
+st.header("Step 1️⃣: Buy File → PLM Upload")
+buy_file = st.file_uploader("Upload Buy File", type=["xlsx", "xls"], key="buy")
+
+if buy_file:
+    st.success("✅ Buy File uploaded successfully. Processing...")
     try:
-        transformed_df = transform_style_units(uploaded_file)
+        transformed_df = transform_style_units(buy_file)
 
-        # Show preview
-        st.subheader("🔎 Preview of Transformed Data")
+        st.subheader("🔎 Preview of PLM Upload")
         st.dataframe(transformed_df.head())
 
         # Export to Excel in memory
         output = BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
             transformed_df.to_excel(writer, index=False, sheet_name="PLM Upload")
         output.seek(0)
 
-        # Download button
         st.download_button(
             label="📥 Download PLM Upload File",
             data=output,
@@ -84,4 +141,32 @@ if uploaded_file:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
     except Exception as e:
-        st.error(f"❌ Error processing file: {e}")
+        st.error(f"❌ Error processing Buy File: {e}")
+
+
+# --- Section 2: PLM Download → MCU Format ---
+st.header("Step 2️⃣: PLM Download → MCU Format")
+plm_file = st.file_uploader("Upload PLM Download File", type=["xlsx", "xls"], key="plm")
+
+if plm_file:
+    st.success("✅ PLM Download File uploaded successfully. Processing...")
+    try:
+        mcu_df = transform_plm_to_mcu(plm_file)
+
+        st.subheader("🔎 Preview of MCU Output")
+        st.dataframe(mcu_df.head())
+
+        # Export MCU file
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            mcu_df.to_excel(writer, index=False, sheet_name="MCU")
+        output.seek(0)
+
+        st.download_button(
+            label="📥 Download MCU File",
+            data=output,
+            file_name="MCU - savage.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    except Exception as e:
+        st.error(f"❌ Error processing PLM Download File: {e}")
