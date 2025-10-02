@@ -121,27 +121,28 @@ def savage_page():
 # HugoBoss Page
 # ======================
 def hugoboss_page():
-    st.title("🧑‍💼 HugoBoss Automation Tool")
-    st.info("👉 HugoBoss logic will be added here later.")
+    st.title("HugoBoss Automation Tool")
+    st.info("HugoBoss logic process will be added here later.")
 
 # ======================
 # VSPINK Page
 # ======================
 def vspink_page():
-    st.title("🩲 VSPINK Brief Automation Tool")
-    st.info("👉 VSPINK Brief logic will be added here later.")
+    st.title("VSPINK Brief Automation Tool")
+    st.info("VSPINK Brief process will be added here later.")
 
 # ======================
 # Navigation
 # ======================
 pg = st.navigation(
     {
-        "Brands": [
+        "Accounts": [
             st.Page(savage_page, title="Savage", icon="📊"),
-            st.Page(hugoboss_page, title="HugoBoss", icon="🧑‍💼"),
-            st.Page(vspink_page, title="VSPINK Brief", icon="🩲"),
+            st.Page(hugoboss_page, title="HugoBoss", icon="📊"),
+            st.Page(vspink_page, title="VSPINK Brief", icon="📊"),
         ]
     }
 )
 
 pg.run()
+
