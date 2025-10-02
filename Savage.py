@@ -2,147 +2,143 @@ import streamlit as st
 import pandas as pd
 from io import BytesIO
 
-# ======================
-# Savage Functions
-# ======================
-def transform_style_units(uploaded_file):
-    """Buy → PLM Upload"""
-    df = pd.read_excel(uploaded_file, header=2)
-    df.columns = df.columns.str.replace(r'[\n"]+', ' ', regex=True).str.strip()
+# ==============================
+#  BRAND LOGIC FUNCTIONS
+# ==============================
 
-    required_cols = ['DESIGN STYLE', 'XFD', 'GLOBAL UNITS']
-    df = df[[c for c in required_cols if c in df.columns]]
+# --- Savage Functions ---
+def transform_savage(uploaded_file):
+    """Transform Savage file into MCU format (placeholder logic)."""
+    df = pd.read_excel(uploaded_file, sheet_name=None, skiprows=2)  # skip 2 header rows
 
-    df['XFD_dt'] = pd.to_datetime(df['XFD'], errors='coerce', dayfirst=True)
-    if df['XFD_dt'].isna().all() and pd.api.types.is_numeric_dtype(df['XFD']):
-        df['XFD_dt'] = pd.to_datetime(df['XFD'], errors='coerce', unit='D', origin='1899-12-30')
+    # combine all sheets
+    combined = pd.concat(df.values(), keys=df.keys(), names=["Sheet Names"])
+    combined = combined.reset_index(level=0).reset_index(drop=True)
 
-    month_map = {
-        1: 'JAN', 2: 'FEB', 3: 'MAR', 4: 'APR', 5: 'MAY', 6: 'JUNE',
-        7: 'JULY', 8: 'AUG', 9: 'SEP', 10: 'OCT', 11: 'NOV', 12: 'DEC'
-    }
-    df['MONTH'] = df['XFD_dt'].dt.month.map(month_map)
-    df = df[df['MONTH'].notna()]
-
-    pivot_df = df.pivot_table(
-        index='DESIGN STYLE',
-        columns='MONTH',
-        values='GLOBAL UNITS',
-        aggfunc='sum',
-        fill_value=0
-    ).reset_index()
-
-    month_order = ['JAN','FEB','MAR','APR','MAY','JUNE','JULY','AUG','SEP','OCT','NOV','DEC']
-    non_month_cols = [c for c in pivot_df.columns if c not in month_order]
-    ordered_cols = non_month_cols + [m for m in month_order if m in pivot_df.columns]
-    return pivot_df[ordered_cols]
-
-def transform_plm_to_mcu(uploaded_file):
-    """PLM Download → MCU"""
-    sheet_names = [
-        "Fabrics", "Strip Cut", "Laces", "Embriodery/Printing", "Elastics",
-        "Tapes", "Trim/Component", "Label/ Transfer", "Foam Cup", "Packing Trim"
+    # Example: keep MCU columns (adjust logic as needed)
+    mcu_columns = [
+        "Sheet Names", "Season", "Style", "BOM", "Cycle", "Article", "Type of Const 1",
+        "Supplier", "UOM", "Composition", "Measurement", "Supplier Country", "Avg YY",
+        "NOV", "DEC"  # dynamic month cols will be added automatically
     ]
+    combined = combined[[c for c in mcu_columns if c in combined.columns]]
 
-    dfs = []
-    xls = pd.ExcelFile(uploaded_file)
+    return combined
 
-    for sheet in sheet_names:
-        if sheet in xls.sheet_names:
-            df = pd.read_excel(xls, sheet_name=sheet)
-            df = df.loc[:, ~df.columns.str.startswith("Sum")]  # remove Sum cols
-            df.insert(0, "Sheet Names", sheet)
-            dfs.append(df)
 
-    if not dfs:
-        return pd.DataFrame()
-
-    combined_df = pd.concat(dfs, ignore_index=True)
-
-    standard_cols = [
-        "Sheet Names","Season","Style","BOM","Cycle","Article",
-        "Type of Const 1","Supplier","UOM","Composition",
-        "Measurement","Supplier Country","Avg YY"
-    ]
-    for col in standard_cols:
-        if col not in combined_df.columns:
-            combined_df[col] = ""
-
-    month_cols = [c for c in combined_df.columns if "-" in c and not c.startswith("Sum")]
-    return combined_df[standard_cols + month_cols]
-
-# ======================
-# Savage Page
-# ======================
 def savage_page():
-    st.title("📊 Savage Automation Tool")
-
-    # Step 1: Buy → PLM
-    st.header("Step 1️⃣: Buy File → PLM Upload")
-    buy_file = st.file_uploader("Upload Buy File", type=["xlsx", "xls"], key="buy_savage")
-    if buy_file:
+    st.title("🦍 Savage MCU Tool")
+    uploaded_file = st.file_uploader("Upload Savage Excel File", type=["xlsx", "xls"], key="savage")
+    if uploaded_file:
         try:
-            transformed_df = transform_style_units(buy_file)
-            st.subheader("🔎 PLM Upload Preview")
+            transformed_df = transform_savage(uploaded_file)
+
+            st.subheader("🔎 MCU Preview")
             st.dataframe(transformed_df.head())
 
             output = BytesIO()
             with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                transformed_df.to_excel(writer, index=False, sheet_name="PLM Upload")
+                transformed_df.to_excel(writer, index=False, sheet_name="Savage MCU")
             output.seek(0)
 
-            st.download_button("📥 Download PLM Upload", output,
-                               file_name="plm_upload_savage.xlsx",
-                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            st.download_button(
+                label="📥 Download Savage MCU File",
+                data=output,
+                file_name="savage_mcu.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
         except Exception as e:
-            st.error(f"❌ Error processing Buy File: {e}")
+            st.error(f"❌ Error processing file: {e}")
 
-    # Step 2: PLM → MCU
-    st.header("Step 2️⃣: PLM Download → MCU Format")
-    plm_file = st.file_uploader("Upload PLM Download File", type=["xlsx", "xls"], key="plm_savage")
-    if plm_file:
+
+# --- HugoBoss Functions (placeholder for now) ---
+def hugoboss_page():
+    st.title("👔 HugoBoss MCU Tool")
+    st.info("Upload logic for HugoBoss will go here. 🚧")
+
+
+# --- VSPINK Functions ---
+def transform_vspink(uploaded_file):
+    df = pd.read_excel(uploaded_file)
+    df.columns = df.columns.str.strip()
+
+    static_cols = [
+        "Customer", "Supplier", "Supplier COO", "Production Plant (region)", "Program",
+        "Construction", "Article", "# of repeats in Article ( optional)",
+        "Composition", "If Yarn Dyed/ Piece Dyed"
+    ]
+    required_cols = static_cols + ["Qty (m)", "EX-mill"]
+    for col in required_cols:
+        if col not in df.columns:
+            raise ValueError(f"Missing required column: {col}")
+
+    df["EX-mill_dt"] = pd.to_datetime(df["EX-mill"], errors="coerce", dayfirst=True)
+
+    month_map = {
+        1: "JAN", 2: "FEB", 3: "MAR", 4: "APR", 5: "MAY", 6: "JUNE",
+        7: "JULY", 8: "AUG", 9: "SEP", 10: "OCT", 11: "NOV", 12: "DEC"
+    }
+    df["MONTH"] = df["EX-mill_dt"].dt.month.map(month_map)
+    df = df[df["MONTH"].notna()]
+
+    grouped = (
+        df.groupby(static_cols + ["MONTH"], dropna=False, as_index=False)["Qty (m)"]
+        .sum()
+    )
+
+    pivot_df = grouped.pivot_table(
+        index=static_cols,
+        columns="MONTH",
+        values="Qty (m)",
+        aggfunc="sum",
+        fill_value=0
+    ).reset_index()
+
+    month_order = ["JAN","FEB","MAR","APR","MAY","JUNE",
+                   "JULY","AUG","SEP","OCT","NOV","DEC"]
+    non_month_cols = [c for c in pivot_df.columns if c not in month_order]
+    ordered_cols = non_month_cols + [m for m in month_order if m in pivot_df.columns]
+    pivot_df = pivot_df[ordered_cols]
+
+    return pivot_df
+
+
+def vspink_page():
+    st.title("🩲 VSPINK Brief MCU Tool")
+    uploaded_file = st.file_uploader("Upload VSPINK Excel File", type=["xlsx", "xls"], key="vspink")
+    if uploaded_file:
         try:
-            mcu_df = transform_plm_to_mcu(plm_file)
+            transformed_df = transform_vspink(uploaded_file)
+
             st.subheader("🔎 MCU Preview")
-            st.dataframe(mcu_df.head())
+            st.dataframe(transformed_df.head())
 
             output = BytesIO()
             with pd.ExcelWriter(output, engine="openpyxl") as writer:
-                mcu_df.to_excel(writer, index=False, sheet_name="MCU Upload")
+                transformed_df.to_excel(writer, index=False, sheet_name="VSPINK MCU")
             output.seek(0)
 
-            st.download_button("📥 Download MCU File", output,
-                               file_name="mcu_savage.xlsx",
-                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            st.download_button(
+                label="📥 Download VSPINK MCU File",
+                data=output,
+                file_name="vspink_mcu.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
         except Exception as e:
-            st.error(f"❌ Error processing PLM File: {e}")
+            st.error(f"❌ Error processing file: {e}")
 
-# ======================
-# HugoBoss Page
-# ======================
-def hugoboss_page():
-    st.title("HugoBoss Automation Tool")
-    st.info("HugoBoss logic process will be added here later.")
 
-# ======================
-# VSPINK Page
-# ======================
-def vspink_page():
-    st.title("VSPINK Brief Automation Tool")
-    st.info("VSPINK Brief process will be added here later.")
+# ==============================
+#   NAVIGATION SETUP
+# ==============================
+savage = st.Page("Savage", page=savage_page)
+hugoboss = st.Page("HugoBoss", page=hugoboss_page)
+vspink = st.Page("VSPINK Brief", page=vspink_page)
 
-# ======================
-# Navigation
-# ======================
 pg = st.navigation(
     {
-        "Accounts": [
-            st.Page(savage_page, title="Savage", icon="📊"),
-            st.Page(hugoboss_page, title="HugoBoss", icon="📊"),
-            st.Page(vspink_page, title="VSPINK Brief", icon="📊"),
-        ]
+        "Accounts": [savage, hugoboss, vspink]
     }
 )
 
 pg.run()
-
