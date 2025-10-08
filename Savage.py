@@ -89,7 +89,7 @@ def transform_plm_to_mcu(uploaded_file):
     return combined
 
 # ----------------------------
-# VSPINK logic (metadata-preserving)
+# VSPINK logic
 # ----------------------------
 def transform_vspink_data(df):
     df.columns = df.columns.str.strip().str.replace("\n", " ").str.replace("\r", " ")
@@ -134,6 +134,22 @@ def transform_vspink_data(df):
     return final_df
 
 # ----------------------------
+# HUGO BOSS logic
+# ----------------------------
+def transform_hugoboss_buy_to_plm(df):
+    df.columns = df.columns.str.strip()
+    material_idx = df.columns.get_loc("Material Number")
+    month_cols = df.columns[material_idx+1:]
+    final_df = df[["Material Number"] + list(month_cols)]
+    return final_df
+
+def transform_hugoboss_plm_to_mcu(df):
+    df.columns = df.columns.str.strip()
+    mask_keep = ~df.columns.str.lower().str.startswith("sum")
+    df = df.loc[:, mask_keep]
+    return df
+
+# ----------------------------
 # Page functions
 # ----------------------------
 def page_home():
@@ -142,7 +158,7 @@ def page_home():
     **Quick guide**
     - *Savage*: Buy file → PLM upload | PLM download → MCU
     - *VSPINK*: Brief file → MCU 
-    - *HugoBoss*: Placeholder
+    - *HugoBoss*: Buy file → PLM download | PLM upload → MCU
     """)
 
 def page_savage():
@@ -176,8 +192,36 @@ def page_savage():
             st.error(f"Error processing PLM download file: {e}")
 
 def page_hugoboss():
-    st.header("HugoBoss")
-    st.info("HugoBoss logic not implemented yet.")
+    st.header("Hugo Boss — Buy Sheet → PLM Download")
+    buy_file = st.file_uploader("Upload Buy Sheet (HugoBoss)", type=["xlsx","xls"], key="hb_buy")
+    if buy_file:
+        try:
+            df = pd.read_excel(buy_file)
+            df_out = transform_hugoboss_buy_to_plm(df)
+            st.subheader("Preview — PLM Download")
+            st.dataframe(df_out.head())
+            out_bytes = excel_to_bytes(df_out, sheet_name="PLM Download")
+            st.download_button("📥 Download PLM Download - hugoboss.xlsx", out_bytes,
+                               file_name="plm_download_hugoboss.xlsx",
+                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        except Exception as e:
+            st.error(f"Error processing HugoBoss Buy file: {e}")
+
+    st.markdown("---")
+    st.header("Hugo Boss — PLM Upload → MCU")
+    plm_file = st.file_uploader("Upload PLM Upload file (HugoBoss)", type=["xlsx","xls"], key="hb_plm")
+    if plm_file:
+        try:
+            df = pd.read_excel(plm_file)
+            df_out = transform_hugoboss_plm_to_mcu(df)
+            st.subheader("Preview — MCU")
+            st.dataframe(df_out.head())
+            out_bytes = excel_to_bytes(df_out, sheet_name="MCU")
+            st.download_button("📥 Download MCU - hugoboss.xlsx", out_bytes,
+                               file_name="MCU_hugoboss.xlsx",
+                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        except Exception as e:
+            st.error(f"Error processing HugoBoss PLM upload: {e}")
 
 def page_vspink():
     st.header("VSPINK Brief")
