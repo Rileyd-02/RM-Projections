@@ -153,12 +153,17 @@ def transform_hugoboss_plm_to_mcu(df):
 # Page functions
 # ----------------------------
 def page_home():
-    st.title("📦 MCU / PLM Tools Dashboard")
+    st.title("📦 MCU Projections tool")
     st.markdown("""
+    **⚠️ Important Notice**
+    - Please do not change the sheet names in the uploaded file.
+    - Make sure you are using the correct template format before uploading.
+    - Any changes may cause errors in processing.
+
     **Quick guide**
-    - *Savage*: Buy file → PLM upload | PLM download → MCU
-    - *VSPINK*: Brief file → MCU 
-    - *HugoBoss*: Buy file → PLM download | PLM upload → MCU
+    - *Savage*: Upload Buy Sheet → PLM upload | PLM upload → MCU Format
+    - *VSPINK Brief*:VSPINK Brief Sheet → MCU Format
+    - *HugoBoss*: Buy Sheet → PLM download | PLM upload → MCU Format
     """)
 
 def page_savage():
@@ -253,3 +258,4 @@ elif page_choice == "HugoBoss":
     page_hugoboss()
 elif page_choice == "VSPINK Brief":
     page_vspink()
+
