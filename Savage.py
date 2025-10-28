@@ -251,15 +251,16 @@ def page_vspink():
 # Sidebar Navigation
 # ----------------------------
 st.sidebar.title("Accounts")
-page_choice = st.sidebar.radio("Choose page", ["Home", "Savage", "HugoBoss", "VSPINK Brief"])
+page_choice = st.sidebar.radio("Choose page", ["Home", "Savage - Bucket 02", "HugoBoss - Bucket 02", "VSPINK Brief - Bucket 03"])
 
 if page_choice == "Home":
     page_home()
-elif page_choice == "Savage":
+elif page_choice == "Savage - Bucket 02":
     page_savage()
-elif page_choice == "HugoBoss":
+elif page_choice == "HugoBoss - Bucket 02":
     page_hugoboss()
-elif page_choice == "VSPINK Brief":
+elif page_choice == "VSPINK Brief - Bucket 03":
     page_vspink()
+
 
 
