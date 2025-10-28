@@ -168,6 +168,7 @@ def page_home():
 
 def page_savage():
     st.header("Savage — Buy File → PLM Upload")
+    st.subheader("Bucket 02")
     buy_file = st.file_uploader("Upload Buy file (Savage)", type=["xlsx","xls"], key="buy_file")
     if buy_file:
         try:
@@ -198,6 +199,7 @@ def page_savage():
 
 def page_hugoboss():
     st.header("Hugo Boss — Buy Sheet → PLM Download")
+    st.subheader("Bucket 02")
     buy_file = st.file_uploader("Upload Buy Sheet (HugoBoss)", type=["xlsx","xls"], key="hb_buy")
     if buy_file:
         try:
@@ -230,6 +232,7 @@ def page_hugoboss():
 
 def page_vspink():
     st.header("VSPINK Brief")
+    st.subheader("Bucket 03")
     up = st.file_uploader("Upload VSPINK file", type=["xlsx","xls"], key="vspink_file")
     if up:
         try:
@@ -258,4 +261,5 @@ elif page_choice == "HugoBoss":
     page_hugoboss()
 elif page_choice == "VSPINK Brief":
     page_vspink()
+
 
